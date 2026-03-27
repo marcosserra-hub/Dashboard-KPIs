@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Executivo — Alza · Fev/2026</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f12;
+    --surface: #141619;
+    --surface2: #1a1d21;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0ede8;
+    --muted: #7a7870;
+    --subtle: #3a3835;
+    --accent: #00c27a;
+    --accent2: #00976a;
+    --accent-dim: rgba(0,194,122,0.12);
+    --blue: #4d9cf8;
+    --amber: #f5a623;
+    --red: #f05a5a;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  html { font-size: 14px; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* SIDEBAR */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo .wordmark {
+    font-size: 22px; font-weight: 600; letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .sidebar-logo .sub {
+    font-size: 11px; color: var(--muted); margin-top: 2px;
+    font-family: var(--mono);
+  }
+  .sidebar-nav { padding: 16px 12px; flex: 1; }
+  .nav-section-label {
+    font-size: 10px; font-weight: 500; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--muted);
+    padding: 0 12px; margin: 16px 0 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: var(--radius);
+    cursor: pointer; font-size: 13px; font-weight: 400;
+    color: var(--muted); transition: all .15s;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--accent-dim); color: var(--accent); font-weight: 500; }
+  .nav-item .icon { width: 16px; height: 16px; opacity: 0.7; flex-shrink: 0; }
+  .nav-item.active .icon { opacity: 1; }
+  .sidebar-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* MAIN */
+  .main { flex: 1; padding: 36px 40px; overflow: auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* PAGE HEADER */
+  .page-header { margin-bottom: 28px; }
+  .page-header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .page-header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* METRIC GRID */
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+  }
+  .metric-label { font-size: 11px; color: var(--muted); letter-spacing: 0.3px; margin-bottom: 8px; }
+  .metric-value { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; line-height: 1; }
+  .metric-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .up { color: var(--accent); }
+  .down { color: var(--red); }
+  .metric-accent { border-color: rgba(0,194,122,0.3); background: rgba(0,194,122,0.05); }
+  .metric-accent .metric-value { color: var(--accent); }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    margin-bottom: 18px;
+  }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 18px; letter-spacing: 0.2px; }
+
+  /* GRID */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } .sidebar { width: 60px; } .sidebar .wordmark, .sidebar .sub, .nav-item span, .nav-section-label, .sidebar-footer { display: none; } .nav-item { justify-content: center; } .main { padding: 24px 20px; } }
+
+  /* BAR */
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .bar-label { width: 140px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--surface2); border-radius: 3px; height: 6px; }
+  .bar-fill { height: 6px; border-radius: 3px; transition: width .4s ease; }
+  .bar-val { width: 52px; text-align: right; font-size: 12px; font-family: var(--mono); flex-shrink: 0; color: var(--text); }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; font-weight: 500; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; font-size: 11px; letter-spacing: 0.3px; }
+  td { padding: 9px 10px; color: var(--text); border-bottom: 1px solid var(--border); white-space: nowrap; font-family: var(--mono); font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+
+  /* PILL */
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; font-family: var(--mono); }
+  .pill-green { background: rgba(0,194,122,0.15); color: #00c27a; }
+  .pill-amber { background: rgba(245,166,35,0.15); color: #f5a623; }
+  .pill-red { background: rgba(240,90,90,0.15); color: #f05a5a; }
+
+  /* CHART */
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* RADAR */
+  .radar-labels { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .radar-label { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .radar-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--subtle); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="wordmark">Alza</div>
+      <div class="sub">KPIs · Fev/2026</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Relatório</div>
+      <button class="nav-item active" onclick="showPage('auc', this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,11 5,7 9,9 15,3"/><path d="M11,3h4v4"/></svg>
+        <span>AuC & Fee Fixo</span>
+      </button>
+      <button class="nav-item" onclick="showPage('nnm', this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+        <span>NNM</span>
+      </button>
+      <button class="nav-item" onclick="showPage('crm', this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 6h14"/></svg>
+        <span>CRM & Índices</span>
+      </button>
+      <button class="nav-item" onclick="showPage('produtos', this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        <span>Produtos</span>
+      </button>
+      <button class="nav-item" onclick="showPage('prospeccao', this)">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="4"/><path d="M10 10l4 4"/></svg>
+        <span>Prospecção</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">Atualizado 13/02/2026</div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- AUC PAGE -->
+    <div class="page active" id="page-auc">
+      <div class="page-header">
+        <h1>AuC & Fee Fixo</h1>
+        <p>Evolução patrimonial e base de clientes — Fevereiro 2026</p>
+      </div>
+      <div class="metric-grid">
+        <div class="metric metric-accent">
+          <div class="metric-label">AuC TOTAL</div>
+          <div class="metric-value">R$ 580M</div>
+          <div class="metric-sub up">↑ R$ 38M vs dez/25</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">AuC FEE FIXO</div>
+          <div class="metric-value">R$ 358M</div>
+          <div class="metric-sub">67,2% do onshore</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">CLIENTES ATIVOS PF</div>
+          <div class="metric-value">1.304</div>
+          <div class="metric-sub up">↑ 74 vs jan/26</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">CLIENTES FEE FIXO</div>
+          <div class="metric-value">606</div>
+          <div class="metric-sub">44,4% do total ativo</div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Evolução AuC total (R$ M)</div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="chartAuC"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Evolução clientes ativos</div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="chartClientes"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">AuC fee fixo por assessor (top 10)</div>
+        <div id="barAssessor"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Detalhamento por assessor — Fev/2026</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Assessor</th><th>Clientes ativos</th><th>Clientes fee fixo</th><th>% fee fixo</th><th>AuC onshore</th><th>AuC fee fixo</th><th>% ff/onshore</th></tr></thead>
+            <tbody id="tbAuC"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- NNM PAGE -->
+    <div class="page" id="page-nnm">
+      <div class="page-header">
+        <h1>Net New Money</h1>
+        <p>Captação bruta e líquida vs meta — Fevereiro 2026</p>
+      </div>
+      <div class="metric-grid">
+        <div class="metric metric-accent">
+          <div class="metric-label">CAPTAÇÃO BRUTA</div>
+          <div class="metric-value">R$ 31,2M</div>
+          <div class="metric-sub up">106% da meta total</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">META TOTAL</div>
+          <div class="metric-value">R$ 29,3M</div>
+          <div class="metric-sub">Fev/2026</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">TOP PERFORMER</div>
+          <div class="metric-value">Bruno M.</div>
+          <div class="metric-sub">R$ 8,3M · 162% da meta</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">ABAIXO DA META</div>
+          <div class="metric-value">11</div>
+          <div class="metric-sub down">assessores &lt; 100%</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">% da meta realizada por assessor</div>
+        <div id="barNNM"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Detalhe NNM por assessor</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Assessor</th><th>Meta</th><th>Bruta NNM</th><th>Líquida NNM</th><th>% meta</th></tr></thead>
+            <tbody id="tbNNM"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CRM PAGE -->
+    <div class="page" id="page-crm">
+      <div class="page-header">
+        <h1>CRM & Índices</h1>
+        <p>IEAA, IESC e execução operacional — Fevereiro 2026</p>
+      </div>
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-label">IEAA MÉDIO</div>
+          <div class="metric-value">25%</div>
+          <div class="metric-sub">Engajamento assessor-assessoria</div>
+        </div>
+        <div class="metric metric-accent">
+          <div class="metric-label">IESC MÉDIO</div>
+          <div class="metric-value">54%</div>
+          <div class="metric-sub">Execução e satisfação cliente</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">FP — META CRM</div>
+          <div class="metric-value">94%</div>
+          <div class="metric-sub up">Melhor KPI de execução</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">REUNIÕES REALIZADAS</div>
+          <div class="metric-value">12%</div>
+          <div class="metric-sub down">Ponto crítico de atenção</div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">IEAA por assessor</div>
+          <div id="barIEAA"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">IESC por assessor</div>
+          <div id="barIESC"></div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Radar de execução — médias do escritório</div>
+          <div class="chart-wrap" style="height:280px;"><canvas id="chartRadar"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">IEAA detalhado por assessor</div>
+          <div class="table-wrap" style="max-height:300px;overflow-y:auto;">
+            <table>
+              <thead><tr><th>Assessor</th><th>Time</th><th>FP</th><th>Aportes</th><th>OPIN</th><th>IEAA</th></tr></thead>
+              <tbody id="tbCRM"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUTOS PAGE -->
+    <div class="page" id="page-produtos">
+      <div class="page-header">
+        <h1>Produtos</h1>
+        <p>Dolarização, seguros e cross-sell — Fevereiro 2026</p>
+      </div>
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-label">AÇÕES CRÍTICAS (FEV)</div>
+          <div class="metric-value">44</div>
+          <div class="metric-sub up">↑ 57% vs jan/26 (28)</div>
+        </div>
+        <div class="metric metric-accent">
+          <div class="metric-label">CROSS-SELL (SEM 9)</div>
+          <div class="metric-value">0,98%</div>
+          <div class="metric-sub">Evolução acumulada fev</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">ABORDAGENS SEGUROS</div>
+          <div class="metric-value">32</div>
+          <div class="metric-sub">Fev/2026</div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Dolarização — valor final por assessor (%)</div>
+          <div id="barDol"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Reuniões de seguros realizadas vs meta (3)</div>
+          <div id="barSeguros"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Dolarização detalhada — Câmbio vs XP US</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Assessor</th><th>Câmbio</th><th>XP US</th><th>Valor Final</th><th>Status</th></tr></thead>
+            <tbody id="tbDol"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROSPECCAO PAGE -->
+    <div class="page" id="page-prospeccao">
+      <div class="page-header">
+        <h1>Prospecção</h1>
+        <p>Fontes de captação e novos contatos — Fevereiro 2026</p>
+      </div>
+      <div class="metric-grid">
+        <div class="metric metric-accent">
+          <div class="metric-label">TOTAL NOVOS CONTATOS</div>
+          <div class="metric-value">74</div>
+          <div class="metric-sub">Fev/2026</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">NETWORKING</div>
+          <div class="metric-value">32</div>
+          <div class="metric-sub">43% do total — canal #1</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">INDICAÇÕES</div>
+          <div class="metric-value">24</div>
+          <div class="metric-sub">32% do total</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">COLD CALL</div>
+          <div class="metric-value">18</div>
+          <div class="metric-sub">24% do total</div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Distribuição por canal</div>
+          <div class="chart-wrap" style="height:220px;"><canvas id="chartCanal"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Contatos por assessor</div>
+          <div id="barProsp"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Detalhe por assessor e canal</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Assessor</th><th>Networking</th><th>Indicação</th><th>Presente</th><th>Eventos</th><th>Cold Call</th><th>LinkedIn</th><th>Total</th></tr></thead>
+            <tbody id="tbProsp"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ---- NAVIGATION ----
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+  const builders = { nnm: buildNNM, crm: buildCRM, produtos: buildProdutos, prospeccao: buildProsp };
+  if (builders[id]) builders[id]();
+}
+
+// ---- HELPERS ----
+const fmtM = v => {
+  const abs = Math.abs(v);
+  const sign = v < 0 ? '-' : '';
+  return sign + 'R$ ' + (abs / 1e6).toFixed(2) + 'M';
+};
+const fmtPct = v => v.toFixed(1) + '%';
+const built = {};
+
+function makeBar(id, items, maxVal, colorFn, valFmt) {
+  if (built[id]) return;
+  built[id] = true;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = items.map(([label, val]) => {
+    const pct = Math.min(100, (Math.abs(val) / maxVal) * 100);
+    const color = colorFn ? colorFn(val) : '#00c27a';
+    const display = valFmt ? valFmt(val) : (val > 1000 ? fmtM(val) : val.toFixed(0) + '%');
+    return `<div class="bar-row">
+      <span class="bar-label" title="${label}">${label}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color};"></div></div>
+      <span class="bar-val" style="color:${val < 0 ? 'var(--red)' : 'var(--text)'}">${display}</span>
+    </div>`;
+  }).join('');
+}
+
+// ---- AUC DATA ----
+const aucMonths = ['mar/25','abr/25','mai/25','jun/25','jul/25','ago/25','set/25','out/25','nov/25','dez/25','jan/26','fev/26'];
+const aucVals = [349.7,376.8,402.0,442.9,474.6,497.2,478.5,488.4,521.5,541.2,579.2,580.2];
+const clientesVals = [623,661,692,754,814,900,984,1146,1218,1230,1280,1304];
+
+new Chart(document.getElementById('chartAuC'), {
+  type: 'line',
+  data: { labels: aucMonths, datasets: [{ data: aucVals, borderColor: '#00c27a', backgroundColor: 'rgba(0,194,122,0.08)', fill: true, tension: 0.35, pointRadius: 3, pointBackgroundColor: '#00c27a' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+    scales: { y: { ticks: { callback: v => 'R$'+v+'M', font: { size: 10 }, color: '#7a7870' }, grid: { color: 'rgba(255,255,255,0.04)' }, border: { color: 'transparent' } }, x: { ticks: { font: { size: 10 }, maxRotation: 45, color: '#7a7870' }, grid: { display: false }, border: { color: 'transparent' } } } }
+});
+
+new Chart(document.getElementById('chartClientes'), {
+  type: 'bar',
+  data: { labels: aucMonths, datasets: [{ data: clientesVals, backgroundColor: 'rgba(77,156,248,0.6)', borderRadius: 4 }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+    scales: { y: { ticks: { font: { size: 10 }, color: '#7a7870' }, grid: { color: 'rgba(255,255,255,0.04)' }, border: { color: 'transparent' } }, x: { ticks: { font: { size: 10 }, maxRotation: 45, color: '#7a7870' }, grid: { display: false }, border: { color: 'transparent' } } } }
+});
+
+const assessorAuCData = [
+  ['Pedro Kira', 69234238], ['Vitoria Viegas', 38122168], ['Lucas Gonçalves', 39828622],
+  ['João Castro', 32814162], ['Bruno Marques', 31851896], ['Gabriel Collazo', 26723018],
+  ['Vinicius Werdan', 17319272], ['Caio Zatz', 16304441], ['Felipe Holler', 8767606],
+  ['Alan Campos', 7648934]
+].sort((a,b) => b[1]-a[1]);
+makeBar('barAssessor', assessorAuCData, assessorAuCData[0][1], () => '#00c27a', v => fmtM(v));
+
+const assessorFullData = [
+  ['Gabriel Collazo','Pedro Kira',95,62,'65,26%','R$ 37,7M','R$ 26,7M','70,96%'],
+  ['Pedro Kira','—',43,33,'76,74%','R$ 72,8M','R$ 69,2M','95,07%'],
+  ['João Castro','Pedro Kira',42,19,'45,24%','R$ 44,4M','R$ 32,8M','73,99%'],
+  ['Lucas Gonçalves','Pedro Kira',102,72,'70,59%','R$ 51,1M','R$ 39,8M','77,99%'],
+  ['Bruno Marques','Pedro Kira',66,22,'33,33%','R$ 45,4M','R$ 31,9M','70,17%'],
+  ['Vitoria Viegas','Pedro Kira',78,49,'62,82%','R$ 44,4M','R$ 38,1M','85,86%'],
+  ['Vinicius Werdan','L. Henrique',82,41,'50,00%','R$ 20,5M','R$ 17,3M','84,42%'],
+  ['Pedro Vasconcelos','L. Henrique',82,44,'53,66%','R$ 7,0M','R$ 4,3M','62,44%'],
+  ['Enzo Castilho','L. Henrique',66,14,'21,21%','R$ 2,8M','R$ 1,0M','36,18%'],
+  ['Juan Miranda','L. Henrique',63,14,'22,22%','R$ 11,1M','R$ 5,5M','49,57%'],
+  ['Vinícius Antunes','Pedro Kira',59,4,'6,78%','R$ 9,7M','R$ 2,2M','22,36%'],
+  ['Rafael Carvalho','L. Henrique',76,21,'27,63%','R$ 6,9M','R$ 4,6M','65,96%'],
+  ['Felipe Holler','L. Henrique',37,13,'35,14%','R$ 12,3M','R$ 8,8M','71,46%'],
+  ['Michel Silva','L. Henrique',22,2,'9,09%','R$ 11,0M','R$ 2,1M','18,98%'],
+  ['Alan Campos','—',15,7,'46,67%','R$ 12,0M','R$ 7,6M','63,59%'],
+  ['Fernando Presa','—',35,9,'25,71%','R$ 24,0M','R$ 5,0M','20,98%'],
+  ['Caio Zatz','—',17,11,'64,71%','R$ 21,5M','R$ 16,3M','75,86%'],
+  ['Matheus Carrascosa','T. Gava',16,4,'25,00%','R$ 11,1M','R$ 5,5M','49,83%'],
+  ['Manuela Karkar','Thiago',20,6,'30,00%','R$ 2,0M','R$ 0,9M','47,38%'],
+];
+const tbAuC = document.getElementById('tbAuC');
+tbAuC.innerHTML = assessorFullData.map(r => `<tr><td>${r[0]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td>${r[7]}</td></tr>`).join('');
+
+// ---- NNM ----
+const nnmData = [
+  ['Bruno Marques', 161.96, 8275727, 4742632, 2928200],
+  ['Pedro Kira', 147.17, 7566349, 4123005, 2801453],
+  ['Franco Frascino', 154.10, 524320, 462306, 300000],
+  ['Fernando Presa', 92.83, 1319254, 1225327, 1320000],
+  ['Felipe Holler', 87.11, 1002441, 871088, 1000000],
+  ['João Castro', 71.60, 4185620, 1732701, 2420000],
+  ['Gabriel Collazo', 63.77, 1560919, 1176398, 1844766],
+  ['Vinicius Werdan', 57.96, 1034495, 579573, 1000000],
+  ['Enzo Castilho', 57.76, 412486, 231039, 400000],
+  ['Juan Miranda', 37.81, 516423, 378128, 1000000],
+  ['Lucas Gonçalves', 37.76, 1347916, 967469, 2562174],
+  ['Rafael Carvalho', 25.45, 221340, 127234, 500000],
+  ['Vinícius Antunes', 24.20, 500352, 425988, 1760000],
+  ['Pedro Vasconcelos', 10.81, 241218, 86492, 800000],
+  ['Michel Silva', 8.71, 211415, 195870, 2250000],
+  ['Elias Roumanos', 0.61, 2557, 1843, 300000],
+  ['Murilo Lima', 0.10, 300, 300, 300000],
+  ['Manuela Karkar', -0.68, 74260, -2039, 300000],
+  ['Vitoria Viegas', -50.24, 1782825, -828878, 1650000],
+  ['Matheus Carrascosa', -88.24, 832656, -1941228, 2200000],
+];
+
+function buildNNM() {
+  if (!built['nnm_bar']) {
+    built['nnm_bar'] = true;
+    const sorted = [...nnmData].sort((a,b) => b[1]-a[1]);
+    const barEl = document.getElementById('barNNM');
+    barEl.innerHTML = sorted.map(([name, pct]) => {
+      const absPct = Math.min(100, Math.abs(pct) / 1.65);
+      const color = pct >= 100 ? '#00c27a' : pct >= 70 ? '#4d9cf8' : pct >= 0 ? '#f5a623' : '#f05a5a';
+      return `<div class="bar-row"><span class="bar-label" title="${name}">${name}</span><div class="bar-track"><div class="bar-fill" style="width:${absPct}%;background:${color};"></div></div><span class="bar-val" style="color:${pct<0?'var(--red)':'var(--text)'}">${pct.toFixed(0)}%</span></div>`;
+    }).join('');
+  }
+  if (!built['nnm_tb']) {
+    built['nnm_tb'] = true;
+    const tb = document.getElementById('tbNNM');
+    tb.innerHTML = nnmData.map(([name, pct, bruta, liq, meta]) => {
+      const pillClass = pct >= 100 ? 'pill-green' : pct >= 70 ? 'pill-amber' : 'pill-red';
+      return `<tr><td style="font-family:var(--font);color:var(--text)">${name}</td><td>${fmtM(meta)}</td><td>${fmtM(bruta)}</td><td style="color:${liq<0?'var(--red)':'inherit'}">${fmtM(liq)}</td><td><span class="pill ${pillClass}">${pct.toFixed(0)}%</span></td></tr>`;
+    }).join('');
+  }
+}
+
+// ---- CRM ----
+function buildCRM() {
+  const ieaaData = [['Gabriel Collazo',46],['Vitoria Viegas',47],['Bruno Marques',36],['Michel Silva',29],['Manuela Karkar',29],['Vinícius Antunes',31],['Enzo Castilho',25],['Lucas Gonçalves',25],['Vinicius Werdan',18],['Pedro Vasconcelos',21],['Felipe Holler',20],['João Castro',24],['Juan Miranda',16],['Rafael Carvalho',15]].sort((a,b)=>b[1]-a[1]);
+  const iescData = [['Pedro Vasconcelos',69],['Felipe Holler',64],['Lucas Gonçalves',64],['Juan Miranda',61],['Vinicius Werdan',57],['Bruno Marques',57],['Rafael Carvalho',53],['Vitoria Viegas',53],['Michel Silva',50],['Gabriel Collazo',51],['Enzo Castilho',51],['João Castro',49],['Vinícius Antunes',45],['Matheus Carrascosa',34]].sort((a,b)=>b[1]-a[1]);
+
+  if (!built['ieaa']) { built['ieaa']=true; document.getElementById('barIEAA').innerHTML = ieaaData.map(([n,v])=>`<div class="bar-row"><span class="bar-label">${n}</span><div class="bar-track"><div class="bar-fill" style="width:${v}%;background:#00c27a;"></div></div><span class="bar-val">${v}%</span></div>`).join(''); }
+  if (!built['iesc']) { built['iesc']=true; document.getElementById('barIESC').innerHTML = iescData.map(([n,v])=>`<div class="bar-row"><span class="bar-label">${n}</span><div class="bar-track"><div class="bar-fill" style="width:${v}%;background:#4d9cf8;"></div></div><span class="bar-val">${v}%</span></div>`).join(''); }
+
+  if (!built['radar']) {
+    built['radar'] = true;
+    new Chart(document.getElementById('chartRadar'), {
+      type: 'radar',
+      data: { labels: ['Reuniões','Neg. Ganhos','FP','Aportes','OPIN','Prospecção','Relacionamento'], datasets: [{ label: 'Média', data: [12,9,94,43,67,8,60], borderColor: '#00c27a', backgroundColor: 'rgba(0,194,122,0.1)', pointBackgroundColor: '#00c27a', pointRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { min: 0, max: 100, ticks: { stepSize: 25, font: { size: 10 }, color: '#7a7870', backdropColor: 'transparent' }, grid: { color: 'rgba(255,255,255,0.06)' }, angleLines: { color: 'rgba(255,255,255,0.06)' }, pointLabels: { font: { size: 11 }, color: '#7a7870' } } } }
+    });
+  }
+
+  if (!built['crm_tb']) {
+    built['crm_tb'] = true;
+    const crmRows = [
+      ['Enzo Castilho','L. Henrique','111%','61%','100%','25%'],
+      ['Felipe Holler','L. Henrique','105%','90%','81%','20%'],
+      ['Juan Miranda','L. Henrique','108%','0%','114%','16%'],
+      ['Michel Silva','L. Henrique','59%','71%','0%','29%'],
+      ['Pedro Vasconcelos','L. Henrique','109%','70%','116%','21%'],
+      ['Rafael Carvalho','L. Henrique','115%','0%','55%','15%'],
+      ['Vinicius Werdan','L. Henrique','95%','73%','90%','18%'],
+      ['Bruno Marques','Pedro Kira','98%','57%','89%','36%'],
+      ['Gabriel Collazo','Pedro Kira','93%','0%','83%','46%'],
+      ['João Castro','Pedro Kira','121%','0%','75%','24%'],
+      ['Lucas Gonçalves','Pedro Kira','96%','50%','73%','25%'],
+      ['Vinícius Antunes','Pedro Kira','114%','56%','112%','31%'],
+      ['Vitoria Viegas','Pedro Kira','86%','0%','0%','47%'],
+      ['Matheus Carrascosa','T. Gava','66%','0%','0%','7%'],
+      ['Elias Roumanos','Thiago','150%','0%','133%','32%'],
+      ['Manuela Karkar','Thiago','106%','56%','90%','29%'],
+    ];
+    document.getElementById('tbCRM').innerHTML = crmRows.map(r => {
+      const ieaa = parseInt(r[5]);
+      const cls = ieaa >= 35 ? 'pill-green' : ieaa >= 20 ? 'pill-amber' : 'pill-red';
+      return `<tr><td style="font-family:var(--font);color:var(--text)">${r[0]}</td><td style="font-family:var(--font)">${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td><span class="pill ${cls}">${r[5]}</span></td></tr>`;
+    }).join('');
+  }
+}
+
+// ---- PRODUTOS ----
+function buildProdutos() {
+  const dolData = [['Juan Miranda',475.67],['Enzo Castilho',347.22],['Vitoria Viegas',173.84],['Pedro Kira',169.97],['Lucas Gonçalves',125.36],['Vinicius Werdan',97.96],['Bruno Marques',85.75],['Matheus Carrascosa',67.34],['Vinícius Antunes',64.38],['Rafael Carvalho',67.60],['Pedro Vasconcelos',52.12],['Manuela Karkar',55.49],['Felipe Holler',49.57],['Alan Campos',41.00],['Gabriel Collazo',39.18],['Fernando Presa',30.57],['Michel Silva',24.07],['João Castro',22.18]].sort((a,b)=>b[1]-a[1]);
+  if (!built['dol']) {
+    built['dol']=true;
+    const max = dolData[0][1];
+    document.getElementById('barDol').innerHTML = dolData.map(([n,v])=>{
+      const color = v>=100?'#00c27a':v>=50?'#f5a623':'#f05a5a';
+      return `<div class="bar-row"><span class="bar-label">${n}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,(v/max)*100)}%;background:${color};"></div></div><span class="bar-val">${v.toFixed(0)}%</span></div>`;
+    }).join('');
+  }
+
+  const segData = [['Pedro Vasconcelos',4,3],['Manuela Karkar',3,3],['Enzo Castilho',2,3],['Lucas Gonçalves',2,3],['Rafael Carvalho',2,3],['Vinícius Antunes',2,3],['Franco Frascino',2,3],['Elias Roumanos',1,3],['Gabriel Collazo',1,3],['Matheus Carrascosa',1,3],['Bruno Marques',0,3],['Felipe Holler',0,3],['Pedro Kira',0,3],['Vitoria Viegas',0,3]].sort((a,b)=>b[1]-a[1]);
+  if (!built['seg']) {
+    built['seg']=true;
+    document.getElementById('barSeguros').innerHTML = segData.map(([n,v,m])=>{
+      const pct=(v/m)*100; const color=pct>=100?'#00c27a':pct>0?'#f5a623':'#f05a5a';
+      return `<div class="bar-row"><span class="bar-label">${n}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color};"></div></div><span class="bar-val">${v}/${m}</span></div>`;
+    }).join('');
+  }
+
+  if (!built['dol_tb']) {
+    built['dol_tb']=true;
+    const dolFull = [['Gabriel Collazo','35,65%','42,71%','39,18%'],['João Castro','26,10%','18,26%','22,18%'],['Lucas Gonçalves','53,60%','197,12%','125,36%'],['Pedro Kira','299,75%','40,19%','169,97%'],['Vitoria Viegas','210,12%','137,56%','173,84%'],['Vinicius Werdan','101,21%','94,70%','97,96%'],['Pedro Vasconcelos','42,03%','62,21%','52,12%'],['Manuela Karkar','110,97%','0,00%','55,49%'],['Bruno Marques','108,17%','63,32%','85,75%'],['Fernando Presa','15,62%','45,51%','30,57%'],['Rafael Carvalho','43,80%','91,39%','67,60%'],['Enzo Castilho','498,00%','196,44%','347,22%'],['Juan Miranda','552,13%','399,21%','475,67%'],['Felipe Holler','39,71%','59,43%','49,57%'],['Vinícius Antunes','47,24%','81,51%','64,38%'],['Alan Campos','59,35%','22,64%','41,00%'],['Michel Silva','9,84%','38,29%','24,07%'],['Matheus Carrascosa','110,90%','23,77%','67,34%']];
+    document.getElementById('tbDol').innerHTML = dolFull.map(([n,c,x,f])=>{
+      const fv = parseFloat(f.replace(',','.'));
+      const cls = fv>=100?'pill-green':fv>=50?'pill-amber':'pill-red';
+      return `<tr><td style="font-family:var(--font);color:var(--text)">${n}</td><td>${c}</td><td>${x}</td><td><span class="pill ${cls}">${f}</span></td><td>${fv>=100?'✓ Acima':fv>=50?'Parcial':'Abaixo'}</td></tr>`;
+    }).join('');
+  }
+}
+
+// ---- PROSPECÇÃO ----
+function buildProsp() {
+  if (!built['canal']) {
+    built['canal']=true;
+    new Chart(document.getElementById('chartCanal'), {
+      type: 'doughnut',
+      data: { labels: ['Networking (32)','Indicação (24)','Cold Call (18)'], datasets: [{ data: [32,24,18], backgroundColor: ['#00c27a','#4d9cf8','#f5a623'], borderWidth: 0, hoverOffset: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 12 }, color: '#7a7870', boxWidth: 12, padding: 16 } } }, cutout: '65%' }
+    });
+  }
+
+  const prospData = [['Michel Silva',7],['Juan Miranda',6],['Enzo Castilho',6],['Pedro Vasconcelos',6],['Manuela Karkar',6],['Bruno Marques',6],['Rafael Carvalho',6],['Franco Frascino',5],['Matheus Carrascosa',4],['Vitoria Viegas',4],['Vinicius Werdan',4],['Alan Campos',3],['Vinícius Antunes',3],['Elias Roumanos',3],['Fernando Presa',2],['Gabriel Collazo',1],['Lucas Gonçalves',1],['Murilo Lima',1]].sort((a,b)=>b[1]-a[1]);
+  if (!built['prosp']) {
+    built['prosp']=true;
+    document.getElementById('barProsp').innerHTML = prospData.map(([n,v])=>`<div class="bar-row"><span class="bar-label">${n}</span><div class="bar-track"><div class="bar-fill" style="width:${(v/7)*100}%;background:#00c27a;"></div></div><span class="bar-val">${v}</span></div>`).join('');
+  }
+
+  if (!built['prosp_tb']) {
+    built['prosp_tb']=true;
+    const prospFull = [['Gabriel Collazo',0,0,0,0,1,0,1],['Pedro Kira',0,0,0,0,0,0,0],['Lucas Gonçalves',0,1,0,0,0,0,1],['Alan Campos',0,3,0,0,0,0,3],['João Castro',0,0,0,0,0,0,0],['Vitoria Viegas',0,4,0,0,0,0,4],['Enzo Castilho',2,2,0,0,2,0,6],['Vinicius Werdan',1,3,0,0,0,0,4],['Pedro Vasconcelos',2,4,0,0,0,0,6],['Juan Miranda',6,0,0,0,0,0,6],['Manuela Karkar',1,2,0,0,3,0,6],['Rafael Carvalho',0,1,0,0,5,0,6],['Franco Frascino',0,2,0,0,3,0,5],['Fernando Presa',2,0,0,0,0,0,2],['Bruno Marques',4,1,0,0,1,0,6],['Vinícius Antunes',3,0,0,0,0,0,3],['Murilo Lima',1,0,0,0,0,0,1],['Michel Silva',7,0,0,0,0,0,7],['Matheus Carrascosa',3,1,0,0,0,0,4],['Elias Roumanos',0,0,0,0,3,0,3]];
+    document.getElementById('tbProsp').innerHTML = prospFull.map(r=>`<tr><td style="font-family:var(--font);color:var(--text)">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td style="font-weight:500;color:var(--accent)">${r[7]}</td></tr>`).join('');
+  }
+}
+</script>
+</body>
+</html>
